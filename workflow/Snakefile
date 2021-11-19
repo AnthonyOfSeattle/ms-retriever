@@ -1,0 +1,30 @@
+import os
+
+
+SNAKEMAKE_DIR = os.path.dirname(workflow.snakefile)
+WORKING_DIR = os.getcwd()
+configfile: "config/config.yaml"
+
+
+include: "rules/common.smk"
+include: "rules/conversion.smk"
+
+
+localrules: all, write_sample_table
+
+
+rule all:
+    input:
+        os.path.join(config["output"], "samples.tsv")
+
+
+samples = get_sample_table(config["input"])
+rule write_sample_table:
+    input:
+        get_final_output(samples)
+    output:
+        os.path.join(config["output"], "samples.tsv")
+    run:
+        output_df = samples.loc[:, ["dataset", "output_location", "output_file"]]
+        output_df.columns = ["dataset", "location", "file"]
+        output_df.to_csv(output[0], sep="\t", index=False)
